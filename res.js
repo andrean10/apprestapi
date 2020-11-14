@@ -1,4 +1,4 @@
-'use-strict';
+'use strict';
 
 exports.ok = function (values, res) {
     var data = {
@@ -7,5 +7,5 @@ exports.ok = function (values, res) {
     };
 
     res.json(data);
-    res.end();
+    res.end()
 }

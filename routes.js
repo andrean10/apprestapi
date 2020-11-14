@@ -6,9 +6,12 @@ module.exports = function (app) {
     app.route('/')
         .get(myJson.index);
     
-    app.route('/showMahasiswas')
+    app.route('/showmahasiswa')
         .get(myJson.showAllMahasiswa);
     
-    app.route('/showMahasiswas/:id')
+    app.route('/showmahasiswa/:id')
         .get(myJson.showMahasiswaById);
+    
+    app.route('/tambahmahasiswa')
+        .post (myJson.addMahasiswa);
 }

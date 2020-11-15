@@ -9,3 +9,23 @@ exports.ok = function (values, res) {
     res.json(data);
     res.end()
 }
+
+exports.failed = (values, res) => {
+    var data = {
+        'status': 400,
+        'values': values
+    }
+
+    res.json(data);
+    res.end();
+}
+
+exports.serverError = (values, res) => {
+    var data = {
+        'status': 500,
+        'values': values
+    }
+
+    res.json(data);
+    res.end();
+}

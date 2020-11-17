@@ -15,4 +15,6 @@ module.exports = function (app) {
         .patch(myJson.editMahasiswa)
         .delete(myJson.deleteMahasiswa);
     
+    app.route('/krs')
+        .get(myJson.showKrs);
 }

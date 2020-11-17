@@ -12,8 +12,9 @@ conn.connect((err) => {
     if (err) {
         console.log(`Error connection: ${err.stack}`);
         return;
+    } else {
+        console.log('succes');
     }
-    console.log('succes');
 });
 
 module.exports = conn;

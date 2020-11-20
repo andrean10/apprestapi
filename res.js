@@ -1,12 +1,14 @@
 'use strict';
 
-exports.ok = function (values, status, res) {
+exports.ok = function (values, res, code) {
+    const codeResponse = code ? code : 200;
+    
     var data = {
-        'status': status,
+        'status': codeResponse,
         'values': values
     };
 
-    res.status(status);
+    res.status(codeResponse);
     res.json(data);
     res.end()
 }

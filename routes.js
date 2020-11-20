@@ -1,6 +1,7 @@
 'use strict';
 
 module.exports = function (app) {
+    const respon = require('./res');
     const myJson = require('./controller');
     const multer = require('multer');
 
@@ -9,7 +10,7 @@ module.exports = function (app) {
             cb(null, './uploads');
         },
         filename: (req, file, cb) => {
-            cb(null, new Date().toISOString().replace(/:/g, '-') + file.originalname);
+            cb(null, new Date().toISOString().replace(/:/g, '-') + file.originalname.replace(/ /g, '-'));
         }
     });
 
@@ -19,7 +20,8 @@ module.exports = function (app) {
         if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
             cb(null, true);
         } else {
-            cb(null, false);
+            req.fileValidationError = 'Only image files are allowed';
+            cb(new Error('Only image files are allowed'), false);
         }
     }
 
@@ -29,7 +31,7 @@ module.exports = function (app) {
         limits: {
             fileSize: 1024 * 1024 * 4
         },
-        fileFilter: fileFilter
+        fileFilter: fileFilter,
     });
 
     app.route('/')
@@ -41,7 +43,7 @@ module.exports = function (app) {
 
     app.route('/mahasiswas/:id')
         .get(myJson.showMahasiswaById)
-        .patch(upload.single('profileMahasiswa'), myJson.editMahasiswa)
+        .patch(myJson.editMahasiswa)
         .delete(myJson.deleteMahasiswa);
 
     app.route('/krs')

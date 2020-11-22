@@ -47,13 +47,12 @@ exports.showMahasiswaById = function (req, res) {
 
 // menambahkan data mahasiswa
 exports.addMahasiswa = (req, res, next) => {
-
     let nim = req.body.nim;
     let nama = req.body.nama;
     let jurusan = req.body.jurusan;
-    let profileMahasiswa = req.file;
+    let images = req.file;
 
-    console.log(profileMahasiswa);
+    console.log(images);
 
     // upload(req, res, (error) => {
     //     if (req.fileValidationError) {
@@ -74,19 +73,18 @@ exports.addMahasiswa = (req, res, next) => {
                 console.log(values);
 
                 if (values && values.length > 0) {
-                    response.failed("Data Sudah Ada di Database", 409, res);
-
                     // delete images if data is exists
-                    deleteImages(profileMahasiswa.filename, next);
+                    deleteImages(images.filename, next);
+
+                    return response.failed("Data Sudah Ada di Database", 409, res);
                 } else {
-                    let pathImages = `uploads/${profileMahasiswa.filename}`;
+                    let pathImages = `uploads/${images.filename}`;
 
                     connection.query('INSERT INTO mahasiswa (nim, nama, jurusan, images) VALUES (?, ?, ?, ?)',
                         [nim, nama, jurusan, pathImages], (error) => {
                             if (error) {
-                                response.failed("Your sent a request that this server could not understand!, Check your send body.", 400, res);
-                                deleteImages(profileMahasiswa.filename, next);
-
+                                deleteImages(images.filename, next);
+                                return response.failed("Your sent a request that this server could not understand!, Check your send body.", 400, res);
                             } else {
                                 response.ok("Berhasil menambahkan data mahasiswa!", res, 201);
                             }
@@ -97,57 +95,140 @@ exports.addMahasiswa = (req, res, next) => {
     );
 }
 
-// mengubah data mahasiswa berdasarkan id
-exports.editMahasiswa = function (req, res) {
+// method put mengubah semua data berdasarkan id
+exports.editAllDataMahasiswa = (req, res, next) => {
     let id = req.params.id;
     let nim = req.body.nim;
     let nama = req.body.nama;
     let jurusan = req.body.jurusan;
     let images = req.file;
 
-    console.log(`${id}, ${nim}, ${nama}, ${jurusan}, ${images}`);
+    if (!nim || !nama || !jurusan || !images) {
+        if (images) {
+            deleteImages(images.filename, next);
+        }
+        return response.failed("Your sent a request that this server could not understand!, Check your send body.", 400, res);
+    }
 
-    // var queries;
-    // var data;
+    console.log(`Filename Images: ${images.filename}`);
 
-    // if (nim) {
-    //     queries = 'UPDATE mahasiswa SET nim = ? WHERE id_mahasiswa = ?';
-    //     data = [nim, id];
-    // }
+    // check id is exist in database or not
+    connection.query('SELECT * FROM mahasiswa WHERE id_mahasiswa = ?', [id],
+        (error, values, fields) => {
+            if (error) {
+                console.log(`Message error : ${error}`);
+                deleteImages(images.filename, next);
 
-    // if (nama) {
-    //     queries = 'UPDATE mahasiswa SET nama = ? WHERE id_mahasiswa = ?';
-    //     data = [nama, id];
-    // }
+                return response.failed("Bad Request!", 400, res);
+            } else {
+                // datannya ada
+                if (values && values.length > 0) {
+                    let pathImages = `uploads/${images.filename}`;
 
-    // if (jurusan) {
-    //     queries = 'UPDATE mahasiswa SET jurusan = ? WHERE id_mahasiswa = ?';
-    //     data = [jurusan, id];
-    // }
+                    connection.query('UPDATE mahasiswa SET nim = ?, nama = ?, jurusan = ?, images = ? WHERE id_mahasiswa = ?',
+                        [nim, nama, jurusan, pathImages, id], (error) => {
+                            if (error) {
+                                next(error);
+                                return response.failed("Bad Request!", 400, res);
+                            } else {
+                                const pathFileDb = values[0].images;
+                                fs.unlink(path.join(__dirname, pathFileDb), (error) => {
+                                    if (error) {
+                                        console.log(`Unlink Error: ${error}`);
+                                    }
+                                });
 
-    // if (images) {
-    //     queries = 'UPDATE mahasiswa SET images = ? WHERE id_mahasiswa = ?';
-    //     data = [`uploads/${images.filename}`, id];
-    // }
+                                response.ok("Data Mahasiswa Berhasil Diubah", res);
+                            }
+                        });
+                } else {
+                    // delete images if data exists
+                    deleteImages(images.filename, next);
+                    return response.failed("Data tidak ditemukan!", 404, res);
+                }
+            }
+        });
+}
 
-    // connection.query(queries, data, (error, values, fields) => {
-    //     if (error) {
-    //         response.failed("Bad Request!", 400, res);
-    //         // connection.log(error);
-    //     } else {
-    //         let message = values.changedRows;
+// method patch mengubah data mahasiswa berdasarkan id
+exports.editMahasiswa = (req, res, next) => {
+    let id = req.params.id;
+    let nim = req.body.nim;
+    let nama = req.body.nama;
+    let jurusan = req.body.jurusan;
+    let images = req.file;
 
-    //         if (message === 0) {
-    //             response.failed("Tidak ada perubahan pada data mahasiswa", 404, res);
-    //         } else {
-    //             if (images) {
-    //                 upload.single('profileMahasiswa');
-    //             }
+    let queries;
+    let data;
 
-    //             response.ok("Data Mahasiswa Berhasil Diubah", res);
-    //         }
-    //     }
-    // });
+    if (nim) {
+        queries = 'UPDATE mahasiswa SET nim = ? WHERE id_mahasiswa = ?';
+        data = [nim, id];
+    }
+
+    if (nama) {
+        queries = 'UPDATE mahasiswa SET nama = ? WHERE id_mahasiswa = ?';
+        data = [nama, id];
+    }
+
+    if (jurusan) {
+        queries = 'UPDATE mahasiswa SET jurusan = ? WHERE id_mahasiswa = ?';
+        data = [jurusan, id];
+    }
+
+    if (images) {
+        queries = 'UPDATE mahasiswa SET images = ? WHERE id_mahasiswa = ?';
+        data = [`uploads/${images.filename}`, id];
+    }
+
+    connection.query('SELECT * FROM mahasiswa WHERE id_mahasiswa = ?', [id],
+        (error, values) => {
+            if (error) {
+                console.log(`Message error : ${error}`);
+                deleteImages(images.filename, next);
+
+                return response.failed("Bad Request!", 400, res);
+            } else {
+                // datannya ada
+                if (values && values.length > 0) {
+                    // if data same in another data in db response 409 conflict
+                    connection.query('SELECT * FROM mahasiswa WHERE nim = ?', [nim], (error, values) => {
+                        // data nim sama dengan data yang ada di db
+                        if (error) {
+                            console.log(error);
+                            next(error);
+
+                            return response.failed('Bad Request!', 400, res);
+                        } else {
+                            if (values && values.length) {
+                                return response.failed("Data sudah ada di database", 409, res);
+                            } else {
+                                // let pathImages = `uploads/${images.filename}`;
+
+                                connection.query(queries, data, (error, values) => {
+                                    if (error) {
+                                        return response.failed("Bad Request!", 400, res);
+                                        // connection.log(error);
+                                    } else {
+                                        let message = values.changedRows;
+
+                                        if (message === 0) {
+                                            response.failed("Tidak ada perubahan pada data mahasiswa", 404, res);
+                                        } else {
+                                            response.ok("Data Mahasiswa Berhasil Diubah", res);
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    });
+                } else {
+                    // delete images if data don't exists
+                    deleteImages(images.filename, next);
+                    return response.failed("Data tidak ditemukan!", 404, res);
+                }
+            }
+        });
 }
 
 // menghapus data mahasiswa berdasarkan id

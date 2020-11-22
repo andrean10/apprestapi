@@ -10,7 +10,7 @@ exports.ok = function (values, res, code) {
 
     res.status(codeResponse);
     res.json(data);
-    res.end()
+    res.end();
 }
 
 exports.failed = (values, code, res) => {

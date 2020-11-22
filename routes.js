@@ -1,7 +1,6 @@
 'use strict';
 
 module.exports = function (app) {
-    const respon = require('./res');
     const myJson = require('./controller');
     const multer = require('multer');
 
@@ -32,6 +31,10 @@ module.exports = function (app) {
             fileSize: 1024 * 1024 * 4
         },
         fileFilter: fileFilter,
+        onError: (error, next) => {
+            console.log('Error multer: ' + error);
+            next(error);
+        }
     });
 
     app.route('/')
@@ -43,6 +46,7 @@ module.exports = function (app) {
 
     app.route('/mahasiswas/:id')
         .get(myJson.showMahasiswaById)
+        .put(upload.single('profileMahasiswa'), myJson.editAllDataMahasiswa)
         .patch(myJson.editMahasiswa)
         .delete(myJson.deleteMahasiswa);
 
